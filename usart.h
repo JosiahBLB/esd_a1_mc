@@ -1,42 +1,41 @@
-/*
- * usart.h
- *
- * Created: 6/04/2023 2:24:37 pm
- *  Author: Josiah Brough
- */ 
-#ifndef USART
-#define USART
+#ifndef USART_H_
+#define USART_H_
 
+// libraries
 #include <avr/interrupt.h>
-#include <string.h>
-#include <LabBoard.h>
+#include <avr/io.h>
 
-
-volatile uint8_t instruction;
-volatile int setValue;
-volatile char execute_instruction; 
-
-volatile char rxState;
-volatile char buffer[6]; // [start][instr][lsb][msb][stop][\0]
-volatile char *p_buffer;
-
-#define FALSE 0
-#define TRUE 1
-
-#define IDLE 0
-#define READ 1
-
+// macros
+#define txBufferFull !(UCSR1A & (1 << UDRE1))
 #define START_BYTE 0x53
+#define INST_IDX 1
+#define MSB_IDX 2
+#define LSB_IDX 3
 #define STOP_BYTE 0xAA
+#define isReadInstruction(inst) (inst < 0x0A)
+#define NONE 0xFF
+#define BUFFER_LEN 5
 
-#define txBufferFull !(UCSR1A & (1<<UDRE1))
-#define converisonRunning (ADCSRA & (1<<ADSC))
-#define startConversion (ADCSRA |= (1<<ADSC))
+// types
+enum UsartState_t { IDLE, READ };
+enum InstReady_t { FALSE, TRUE };
+struct serialCom_t {
+    char buffer[BUFFER_LEN];
+	char *p_buffer;
+    char instruction;
+    enum InstReady_t instruction_ready;
+    int data;
+	enum UsartState_t state;
+};
 
-#define DEFAULT 0xFF
-
+// function prototypes
 void readUsart(void);
+void saveBuffer(void);
 void sendUsart(char byte_to_send);
-void sendAdcUsart(char input_device);
+void setupUsart(void);
+ISR(USART1_RX_vect);
 
-#endif
+// variable declarations
+volatile struct serialCom_t *p_serialCom;
+
+#endif /* USART_H_ */

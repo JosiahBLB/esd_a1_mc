@@ -3,13 +3,14 @@
  *
  * Created: 6/04/2023 2:20:32 pm
  *  Author: qhs7289
- */ 
+ */
 
-#ifndef INSTRUCTION
-#define INSTRUCTION
+#ifndef INSTRUCTION_H_
+#define INSTRUCTION_H_
 
-#include <avr/io.h>
+#include "adc.h"
 #include "usart.h"
+#include <avr/io.h>
 
 #define TX_CHECK 0x00
 #define READ_PINA 0x01
@@ -23,19 +24,21 @@
 #define SET_LAMP 0x0C
 #define SET_MOTOR 0x0D
 
-#define pot1 0b01100010
-#define pot2 0b01100001
-#define tempSensor 0b01100011
-#define lightSensor 0b01100000
+#define POT1 0b01100010
+#define POT2 0b01100001
+#define TEMPSENSOR 0b01100011
+#define LIGHTSENSOR 0b01100000
 
-#define motorOff (DDRB &= ~(1<<5))
-#define motorOn (DDRB |= (1<<5))
-#define lampOff (DDRB &= ~(1<<6))
-#define lampOn (DDRB |= (1<<6))
-#define heaterOff (DDRB &= ~(1<<7))
-#define heaterOn (DDRB |= (1<<7))
+#define MOTOR 5
+#define LAMP 6
+#define HEATER 7
 
-ISR(USART1_RX_vect);
-void setup(void);
+#define enableBitPortB(bit) (DDRB |= (1 << bit))
+#define disableBitPortB(bit) (DDRB &= ~(1 << bit))
 
-#endif
+void setup16BitTimer(void);
+void setupIo(void);
+void exeInst(void);
+void updatePeripheralState(char portBn);
+
+#endif /* ADC_H_ */

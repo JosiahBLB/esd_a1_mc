@@ -1,69 +1,58 @@
-/*
- * usart.c
- *
- * Created: 6/04/2023 2:24:19 pm
- *  Author: Josiah Brough
- */ 
-
 #include "usart.h"
 
+void setupUsart(void) {
+    cli();
+    UCSR1B = 0b10011000; // enable receiver and it's interrupt
+    UCSR1C = 0b00000110; // 1 stop bit, 8 bit character size, no parity bits
+    UBRR1L = 12;         // baud rate set to 38400
+	static struct serialCom_t serialCom = {
+		.buffer = {0},
+		.data = 0,
+		.instruction = NONE,
+		.instruction_ready = FALSE,
+		.state = IDLE,
+	};
+	serialCom.p_buffer = serialCom.buffer;
+	p_serialCom = &serialCom;
+    sei();
+}
 
-void readUsart(void)
-{
-	*p_buffer = UDR1; // Save byte
-	switch (rxState)
-	{
-		case IDLE: 
-		if (*p_buffer == START_BYTE) // Wait for a start byte
-		{
-			rxState = READ;
-			p_buffer++;
-		}
-		break;
-			
-		case READ: // [start][instr][msb][lsb][stop][\0]
-		if ((p_buffer == &buffer[4]) || (*p_buffer == STOP_BYTE)) // If at end of the array or byte is the stop byte
-		{
-			if (buffer[2] == STOP_BYTE) // Instruction only
-			{
-				instruction = buffer[1];
+void readUsart(void) {
+	// read in the next byte
+	*(p_serialCom->p_buffer) = UDR1;
+
+	switch(p_serialCom->state) {
+		case IDLE: // wait till start byte
+			if (*(p_serialCom->p_buffer) == START_BYTE) {
+				p_serialCom->state = READ;
+				*(p_serialCom->p_buffer) = 0; // clear start byte
+				p_serialCom->p_buffer++;
 			}
-			else if (buffer[3] == STOP_BYTE) // Instruction and one byte
-			{
-				instruction = buffer[1];
-				setValue = buffer[2];
+			break;
+		case READ: // save all data to buffer
+			p_serialCom->p_buffer++;
+			if (p_serialCom->p_buffer == &p_serialCom->buffer[4]) { // end of buffer
+				// reset p_buffer to idx 0
+				p_serialCom->p_buffer = p_serialCom->buffer;
+				p_serialCom->instruction_ready = TRUE;
+				p_serialCom->state = IDLE;
 			}
-			else if (buffer[4] == STOP_BYTE) // Instruction and two bytes
-			{
-				instruction = buffer[1];
-				setValue = (buffer[2] << 8) + buffer[3];
-			}
-			execute_instruction = TRUE; // Set flag to true
-				
-			// Reset
-			memset(buffer, 0, 6*sizeof(uint8_t)); // Clear the buffer
-			p_buffer = &buffer[0]; // reset the point to the 0th index
-			rxState = IDLE;
-		}
-		else
-		{
-			p_buffer++;
-		}
-		break;
+			break;
 	}
 }
 
-void sendUsart(char byte_to_send)
-{
-	while(txBufferFull); // Wait for tx buffer to be empty
-	UDR1 = byte_to_send; // Write data to txBuffer
+void saveBuffer(void) {
+	p_serialCom->instruction = p_serialCom->buffer[INST_IDX];
+	p_serialCom->data = (p_serialCom->buffer[MSB_IDX] << 8);
+	p_serialCom->data += p_serialCom->buffer[LSB_IDX];
 }
 
-void sendAdcUsart(char input_device)
-{
-	ADMUX = input_device; // Set ADC input device
-	startConversion;
-	while(converisonRunning); // wait for conversion to complete
-	char adc_val = ADCH; // Save converted ADC value
-	sendUsart(adc_val);
+void sendUsart(char byte_to_send) {
+    while (txBufferFull)
+        ;
+    UDR1 = byte_to_send;
+}
+
+ISR(USART1_RX_vect) {
+    readUsart();
 }
