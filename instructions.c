@@ -8,10 +8,10 @@ void setup16BitTimer(void) {
 }
 
 void setupIo(void) {
-    DDRC = 0xFF;
-    DDRA = 0x00;
-    DDRE = 0x03;
-    PORTE = 0x00;
+    DDRC = 0xFF;  // LEDs
+    DDRA = 0x00;  // switches
+    DDRE = 0x03;  // multiplexer
+    PORTE = 0x00; // set multiplexer to switches
 }
 
 void exeInst(void) {
@@ -59,8 +59,10 @@ void exeInst(void) {
         default:
             break;
     }
+
+    // reset values
+    p_serialCom->data = 0;
     p_serialCom->instruction = NONE;
-	p_serialCom->data = 0;
     p_serialCom->instruction_ready = FALSE;
 }
 

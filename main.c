@@ -1,24 +1,19 @@
 #include "instructions.h"
 
-void setup(void);
-
 int main(void) {
-
-	setup();
-    for (;;) {
-        if (p_serialCom->instruction_ready)
-        {
-			saveBuffer();
-            exeInst();
-        }
-    }
-}
-
-void setup(void) {
-    cli();
+    // setup
+    cli(); // clear interrupts
     setupAdc();
     setupIo();
     setup16BitTimer();
     setupUsart();
-    sei();
+    sei(); // set interrupts
+
+    // main loop
+    for (;;) {
+        if (p_serialCom->instruction_ready) {
+            saveBuffer();
+            exeInst();
+        }
+    }
 }

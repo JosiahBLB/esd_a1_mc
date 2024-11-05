@@ -21,11 +21,11 @@ enum UsartState_t { IDLE, READ };
 enum InstReady_t { FALSE, TRUE };
 struct serialCom_t {
     char buffer[BUFFER_LEN];
-	char *p_buffer;
-    char instruction;
+    char* p_buffer;
+    enum UsartState_t state;
     enum InstReady_t instruction_ready;
+    char instruction;
     int data;
-	enum UsartState_t state;
 };
 
 // function prototypes
@@ -36,6 +36,6 @@ void setupUsart(void);
 ISR(USART1_RX_vect);
 
 // variable declarations
-volatile struct serialCom_t *p_serialCom;
+volatile struct serialCom_t* p_serialCom;
 
 #endif /* USART_H_ */
